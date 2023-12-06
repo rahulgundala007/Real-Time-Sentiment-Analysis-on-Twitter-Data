@@ -1,42 +1,44 @@
 from flask import Flask, render_template
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, udf, from_json
-from pyspark.sql.types import StringType, StructType, StructField
-from textblob import TextBlob
+import pandas as pd
+import pymongo
+import plotly.express as px
+import json
+import plotly
+import ast  # For safely evaluating strings containing Python expressions
 
 app = Flask(__name__)
 
-# Initialize Spark Session
-spark = SparkSession.builder \
-    .appName("MongoDBIntegration") \
-    .config("spark.mongodb.output.uri", "mongodb://localhost:27017/twitter_data.Project691") \
-    .getOrCreate()
-
-# Define UDF for sentiment analysis
-def sentiment_analysis(text):
-    analysis = TextBlob(text)
-    if analysis.sentiment.polarity > 0:
-        return 'Positive'
-    elif analysis.sentiment.polarity == 0:
-        return 'Neutral'
-    else:
-        return 'Negative'
-
-sentiment_udf = udf(sentiment_analysis, StringType())
-
-# Define the schema for the JSON data
-json_schema = StructType([
-    StructField("tweet_id", StringType(), True),
-    StructField("entity", StringType(), True),
-    StructField("tweet_content", StringType(), True)
-])
-
-# Initialize data source (empty list for now)
-data_source = []
-
 @app.route('/')
 def index():
-    return render_template('index.html', data=data_source)
+    # MongoDB connection
+    client = pymongo.MongoClient("mongodb://localhost:27017/twitter_data")
+    db = client["twitter_data"]  # Adjust the database name
+    collection = db["SentimentalAnalysis"]  # Adjust the collection name
+
+    # Fetch data from MongoDB and convert to DataFrame
+    data = list(collection.find({}, {"_id": 0, "value": 1}))
+    df = pd.DataFrame([ast.literal_eval(d['value']) for d in data if 'value' in d])
+
+
+    # Group by entity and sentiment, then count
+    grouped_df = df.groupby(['entity', 'sentiment']).size().reset_index(name='count')
+
+    # Create the Plotly bar chart with legend
+    fig = px.bar(grouped_df, x='sentiment', y='count', color='entity', barmode='group')
+
+    # Count sentiments
+    # sentiment_counts = df['sentiment'].value_counts()
+
+    # # Convert to DataFrame for Plotly
+    # sentiment_df = sentiment_counts.reset_index()
+    # sentiment_df.columns = ['sentiment', 'count']
+
+    # # Create the Plotly bar chart
+    # fig = px.bar(sentiment_df, x='sentiment', y='count')
+    
+    graph_json = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+
+    return render_template('index.html', graph_json=graph_json)
 
 if __name__ == '__main__':
     app.run(debug=True)

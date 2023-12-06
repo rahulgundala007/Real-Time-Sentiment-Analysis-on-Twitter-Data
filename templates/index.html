@@ -1,29 +1,20 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Sentiment Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 </head>
 <body>
-    <h1>Sentiment Analysis Results</h1>
-    <table>
-        <thead>
-            <tr>
-                <th>Tweet ID</th>
-                <th>Entity</th>
-                <th>Tweet Content</th>
-                <th>Sentiment</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in data %}
-            <tr>
-                <td>{{ row.tweet_id }}</td>
-                <td>{{ row.entity }}</td>
-                <td>{{ row.tweet_content }}</td>
-                <td>{{ row.sentiment }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <h1>Sentiment Analysis of Tweets</h1>
+    <div id="graph"></div>
+    <script>
+        var graph = {{ graph_json | safe }};
+        Plotly.newPlot('graph', graph.data, graph.layout);
+
+        setInterval(function() {
+            location.reload();
+        }, 5000);
+    </script>
 </body>
 </html>

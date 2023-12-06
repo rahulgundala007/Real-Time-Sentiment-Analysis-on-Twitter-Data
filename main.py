@@ -19,12 +19,12 @@ def sentiment_analysis(text):
     
 def write_mongo(df, epoch_id):
     # Replace with your MongoDB details
-    mongo_uri = "mongodb://localhost:27017/twitter_data.Project691"
+    mongo_uri = "mongodb://localhost:27017/twitter_data.SentimentalAnalysis"
     df.write.format("mongo").mode("append").option("uri", mongo_uri).save()
 
 spark = SparkSession.builder \
     .appName("MongoDBIntegration") \
-    .config("spark.mongodb.output.uri", "mongodb://localhost:27017/twitter_data.Project691") \
+    .config("spark.mongodb.output.uri", "mongodb://localhost:27017/twitter_data.SentimentalAnalysis") \
     .getOrCreate()
 
 # Define UDF for sentiment analysis
